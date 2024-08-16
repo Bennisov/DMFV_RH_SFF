@@ -86,12 +86,13 @@ void cuts::Loop()
          good_lept.SetPtEtaPhiM(Muon_PT[0], Muon_Eta[0], Muon_Phi[0], 0.10566);
       }
       if (good_lept.Pt() < 30.) continue;
-      // if (Cut(ientry) < 0) continue;
-      float MT2 = -999.;
-
       int jet_count = 0;
       int bjet_count = 0;
       float dphi_min = 999.;
+      TLorentzVector bjet;
+      TLorentzVector lead_jet;
+      bool var = 1;
+      std::vector<float> j_pt;
       for (size_t i = 0; i < Jet_size; i++)
       {
          float dphi = std::abs(Jet_Phi[i] - MissingET_Phi[0]);
@@ -102,17 +103,24 @@ void cuts::Loop()
          if (GoodJet(Electron_size, Muon_size, Photon_size, Electron_Eta, Electron_Phi, Muon_Eta, Muon_Phi, Photon_Eta, Photon_Phi, Jet_Eta[i], Jet_Phi[i]))
          {
             jet_count++;
-            h_pt_jet->Fill(Jet_PT[i]);
+            j_pt.push_back(Jet_PT[i]);
             if (Jet_BTag[i])
             {
                bjet_count++;
-               TLorentzVector bjet;
                bjet.SetPtEtaPhiM(Jet_PT[i], Jet_Eta[i], Jet_Phi[i], Jet_Mass[i]);
-               h_pt_bjet->Fill(Jet_PT[i]);
-               h_m_bl->Fill((bjet+good_lept).M());
+            }
+            else if (var)
+            {
+               lead_jet.SetPtEtaPhiM(Jet_PT[i], Jet_Eta[i], Jet_Phi[i], Jet_Mass[i]);
+               var = 0;
             }
          }
       }
+      if ((bjet_count != 1) or(jet_count < 2)) continue;
+      h_pt_bjet->Fill(bjet.Pt());
+      h_m_bl->Fill((bjet+good_lept).M());
+      float MT2 = -999.;
+      for (float i : j_pt) h_pt_jet->Fill(i);
       h_n_bjet->Fill(bjet_count);
       h_n_jets->Fill(jet_count);
       h_dphi_min->Fill(dphi_min);
@@ -125,46 +133,24 @@ void cuts::Loop()
       float kos = std::cos(std::abs(good_lept.Phi() - MissingET_Phi[0]));
       float mt = std::sqrt(2 * MissingET_MET[0] * good_lept.Pt() * (1 - kos));
       h_mt->Fill(mt);
-      int ind_bjet = -1;
-      int lead_jet = -1;
-      for (size_t i = 0; i < Jet_size; i++)
-      {
-         if ((lead_jet) > -1 and (ind_bjet) > -1) break;
-         if (GoodJet(Electron_size, Muon_size, Photon_size, Electron_Eta, Electron_Phi, Muon_Eta, Muon_Phi, Photon_Eta, Photon_Phi, Jet_Eta[i], Jet_Phi[i]))
-         {
-            if ((Jet_Flavor[i] == 5) and (ind_bjet == -1))
-            {
-               ind_bjet = i;
-               continue;        
-            }
-            lead_jet = i;
-         }
-      }
-      if ((lead_jet) > -1 and (ind_bjet) > -1)
-      {
-         TLorentzVector bjet;
-         bjet.SetPtEtaPhiM(Jet_PT[ind_bjet], Jet_Eta[ind_bjet], Jet_Phi[ind_bjet], Jet_Mass[ind_bjet]);
-         TLorentzVector tqark = bjet + good_lept;
-         TLorentzVector otherqark;
-         otherqark.SetPtEtaPhiM(Jet_PT[lead_jet], Jet_Eta[lead_jet], Jet_Phi[lead_jet], Jet_Mass[lead_jet]);
-         double mVisA = tqark.M();
-         double mVisB = otherqark.M();
-         double pxA = tqark.Px();
-         double pyA = tqark.Py();
-         double pxB = otherqark.Px();
-         double pyB = otherqark.Py();
-         double pxMiss = MissingET_MET[0] * std::cos(MissingET_Phi[0]);
-         double pyMiss = MissingET_MET[0] * std::sin(MissingET_Phi[0]);
-         double chiA =200.;
-         double chiB = 200.;
-         double desiredPrecisionOnMt2 = 0.;
-         MT2 =  asymm_mt2_lester_bisect::get_mT2(
-         mVisA, pxA, pyA,
-         mVisB, pxB, pyB,
-         pxMiss, pyMiss,
-         chiA, chiB,
-         desiredPrecisionOnMt2);
-      }
+      TLorentzVector tqark = bjet + good_lept;
+      double mVisA = tqark.M();
+      double mVisB = lead_jet.M();
+      double pxA = tqark.Px();
+      double pyA = tqark.Py();
+      double pxB = lead_jet.Px();
+      double pyB = lead_jet.Py();
+      double pxMiss = MissingET_MET[0] * std::cos(MissingET_Phi[0]);
+      double pyMiss = MissingET_MET[0] * std::sin(MissingET_Phi[0]);
+      double chiA =200.;
+      double chiB = 200.;
+      double desiredPrecisionOnMt2 = 0.;
+      MT2 =  asymm_mt2_lester_bisect::get_mT2(
+      mVisA, pxA, pyA,
+      mVisB, pxB, pyB,
+      pxMiss, pyMiss,
+      chiA, chiB,
+      desiredPrecisionOnMt2);
       h_mt2->Fill(MT2);
    }
    h_mt2->Write();

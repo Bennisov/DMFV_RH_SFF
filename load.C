@@ -90,6 +90,10 @@ void load::Loop()
       int jet_count = 0;
       int bjet_count = 0;
       float dphi_min = 999.;
+      TLorentzVector bjet;
+      TLorentzVector lead_jet;
+      bool var = 1;
+      std::vector<float> j_pt;
       for (size_t i = 0; i < JetE->size(); i++)
       {
          float dphi = std::abs(JetPhi->at(i) - MissingETPHI);
@@ -100,18 +104,23 @@ void load::Loop()
          if (GoodJet(ElectronE->size(), MuonE->size(), ElectronEta, ElectronPhi, MuonEta, MuonPhi, JetEta->at(i), JetPhi->at(i)))
          {
             jet_count++;
-            h_pt_jet->Fill(JetPT->at(i), weight_total_NOSYS);
+            j_pt.push_back(JetPT->at(i));
             if (JetBTag->at(i))
             {
                bjet_count++;
-               TLorentzVector bjet;
                bjet.SetPtEtaPhiE(JetPT->at(i), JetEta->at(i), JetPhi->at(i), JetE->at(i));
-               h_pt_bjet->Fill(JetPT->at(i), weight_total_NOSYS);
-               h_m_bl->Fill((bjet+good_lept).M(), weight_total_NOSYS);
-            
+            }
+            else if (var)
+            {
+               lead_jet.SetPtEtaPhiE(JetPT->at(i), JetEta->at(i), JetPhi->at(i), JetE->at(i));
+               var = 0;
             }
          }
       }
+      if ((bjet_count != 1) or (jet_count < 2)) continue;
+      for(float i: j_pt) h_pt_jet->Fill(i, weight_total_NOSYS);
+      h_pt_bjet->Fill(bjet.Pt(), weight_total_NOSYS);
+      h_m_bl->Fill((bjet+good_lept).M(), weight_total_NOSYS);
       h_n_bjet->Fill(bjet_count, weight_total_NOSYS);
       h_n_jets->Fill(jet_count, weight_total_NOSYS);
       h_dphi_min->Fill(dphi_min, weight_total_NOSYS);
@@ -122,46 +131,25 @@ void load::Loop()
       float kos = std::cos(std::abs(good_lept.Phi() - MissingETPHI));
       float mt = std::sqrt(2 * MissingETMET * good_lept.Pt() * (1 - kos));
       h_mt->Fill(mt, weight_total_NOSYS);
-      int ind_bjet = -1;
-      int lead_jet = -1;
-      for (size_t i = 0; i < JetE->size(); i++)
-      {
-         if ((lead_jet) > -1 and (ind_bjet) > -1) break;
-         if (GoodJet(ElectronE->size(), MuonE->size(), ElectronEta, ElectronPhi, MuonEta, MuonPhi, JetEta->at(i), JetPhi->at(i)))
-         {
-            if ((JetBTag) and (ind_bjet == -1))
-            {
-               ind_bjet = i;
-               continue;        
-            }
-            lead_jet = i;
-         }
-      }
-      if ((lead_jet) > -1 and (ind_bjet) > -1)
-      {
-         TLorentzVector bjet;
-         bjet.SetPtEtaPhiE(JetPT->at(ind_bjet), JetEta->at(ind_bjet), JetPhi->at(ind_bjet), JetE->at(ind_bjet));
-         TLorentzVector tqark = bjet + good_lept;
-         TLorentzVector otherqark;
-         otherqark.SetPtEtaPhiE(JetPT->at(lead_jet), JetEta->at(lead_jet), JetPhi->at(lead_jet), JetE->at(lead_jet));
-         double mVisA = tqark.M();
-         double mVisB = otherqark.M();
-         double pxA = tqark.Px();
-         double pyA = tqark.Py();
-         double pxB = otherqark.Px();
-         double pyB = otherqark.Py();
-         double pxMiss = MissingETMET * std::cos(MissingETPHI);
-         double pyMiss = MissingETMET * std::sin(MissingETPHI);
-         double chiA = 200.;
-         double chiB = 200.;
-         double desiredPrecisionOnMt2 = 0.;
-         mt2 =  asymm_mt2_lester_bisect::get_mT2(
-         mVisA, pxA, pyA,
-         mVisB, pxB, pyB,
-         pxMiss, pyMiss,
-         chiA, chiB,
-         desiredPrecisionOnMt2);
-      }
+
+      TLorentzVector tqark = bjet + good_lept;
+      double mVisA = tqark.M();
+      double mVisB = lead_jet.M();
+      double pxA = tqark.Px();
+      double pyA = tqark.Py();
+      double pxB = lead_jet.Px();
+      double pyB = lead_jet.Py();
+      double pxMiss = MissingETMET * std::cos(MissingETPHI);
+      double pyMiss = MissingETMET * std::sin(MissingETPHI);
+      double chiA = 200.;
+      double chiB = 200.;
+      double desiredPrecisionOnMt2 = 0.;
+      mt2 =  asymm_mt2_lester_bisect::get_mT2(
+      mVisA, pxA, pyA,
+      mVisB, pxB, pyB,
+      pxMiss, pyMiss,
+      chiA, chiB,
+      desiredPrecisionOnMt2);
       h_mt2->Fill(mt2, weight_total_NOSYS);
    }
    h_mt2->Write();
