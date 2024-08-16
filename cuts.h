@@ -15,6 +15,7 @@
 // Header file for the classes stored in the TTree if any.
 #include "TClonesArray.h"
 #include "TObject.h"
+#include "vector"
 
 class cuts {
 public :
