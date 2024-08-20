@@ -23,7 +23,7 @@ public :
 
 // Fixed size dimensions of array or collections stored in the TTree if any.
 
-   std::string loaded_file_name = "zjets.root";
+   std::string loaded_file_name = "others.root";
       /* 
       "others.root"
       "singletop.root"
@@ -31,6 +31,7 @@ public :
       "ttZ.root"
       "wjets.root"
       "zjets.root"  
+      "data.root"
        */
    // Declaration of leaf types
    vector<float>   *ElectronE;

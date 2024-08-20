@@ -801,9 +801,9 @@ cuts::cuts(TTree *tree) : fChain(0)
 // if parameter tree is not specified (or zero), connect the file
 // used to generate this class and read the Tree.
    if (tree == 0) {
-      TFile *f = (TFile*)gROOT->GetListOfFiles()->FindObject("DMRH_2.0_850.root");
+      TFile *f = (TFile*)gROOT->GetListOfFiles()->FindObject("update_1.0_1000.root");
       if (!f || !f->IsOpen()) {
-         f = new TFile("DMRH_2.0_850.root");
+         f = new TFile("update_1.0_1000.root");
       }
       f->GetObject("Delphes",tree);
 

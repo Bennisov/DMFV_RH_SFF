@@ -29,7 +29,7 @@ void load::Loop()
    TFile *outputFile = new TFile(output_file_name.c_str(), "RECREATE");
 
    auto h_mt2 = new TH1F("h_mt2", ";;", 50, 0., 1500.);
-   // auto cutflow = new TH1F("cutflow", "Cutflow", 6, 0.5, 0.5 + 6);
+   auto cutflow = new TH1F("cutflow", "Cutflow", 8, 0.5, 0.5 + 8);
    auto h_mt = new TH1F("h_mt", ";;", 50, 0., 1500.);
    auto h_met = new TH1F("h_met", ";;", 50, 0., 1500.);
    auto h_pt_l = new TH1F("h_pt_l", ";;", 50, 0., 1500.);
@@ -41,17 +41,14 @@ void load::Loop()
    auto h_n_l = new TH1F("h_n_l", ";;", 10, 0, 10);
    auto h_n_jets = new TH1F("h_n_jets", ";;", 10, 0, 10);
 
-   // cutflow->GetXaxis()->SetBinLabel(1, "No Cut");
-   // cutflow->GetXaxis()->SetBinLabel(2, "Exactly 1 lepton detected");
-   // cutflow->GetXaxis()->SetBinLabel(3, "At least 2 jets");
-   // cutflow->GetXaxis()->SetBinLabel(4, "MET > 175GeV");
-   // cutflow->GetXaxis()->SetBinLabel(5, "MT of l and MET > 175GeV");
-   // cutflow->GetXaxis()->SetBinLabel(6, "At least one B-jet");
-   double cs = 29720; //fb
-   double u_cs = 87.57; //fb
-   double N = 10000;
-   double L = 140; //fb^-1
-   double w = cs * L / N;
+   cutflow->GetXaxis()->SetBinLabel(1, "No Cut");
+   cutflow->GetXaxis()->SetBinLabel(2, "Exactly 1 lepton detected");
+   cutflow->GetXaxis()->SetBinLabel(3, "MET > 200 GeV");
+   cutflow->GetXaxis()->SetBinLabel(4, "Lepton PT>30GeV");
+   cutflow->GetXaxis()->SetBinLabel(5, "B-Jet no == 1");
+   cutflow->GetXaxis()->SetBinLabel(6, "At least 2 jets");
+   cutflow->GetXaxis()->SetBinLabel(7, "MT of l and MET > 175GeV");
+   cutflow->GetXaxis()->SetBinLabel(8, "Inv mass of b-jet and lept < 175GeV");
 
 
 
@@ -76,7 +73,11 @@ void load::Loop()
       for (auto& element : *MuonPT) element /= 1000.;
       float mt2 = -999.;
       int l_n = ElectronE->size() + MuonE->size();
-      if ((l_n != 1) or (MissingETMET < 200.)) continue;
+      cutflow->Fill(1, weight_total_NOSYS);
+      if (l_n != 1) continue;
+      cutflow->Fill(2, weight_total_NOSYS);
+      if (MissingETMET < 200.) continue;
+      cutflow->Fill(3, weight_total_NOSYS);
       TLorentzVector good_lept;
       if (ElectronE->size())
       {
@@ -87,6 +88,7 @@ void load::Loop()
          good_lept.SetPtEtaPhiM(MuonPT->at(0), MuonEta->at(0), MuonPhi->at(0), 0.10566);
       }
       if (good_lept.Pt() < 30.) continue;
+      cutflow->Fill(4, weight_total_NOSYS);
       int jet_count = 0;
       int bjet_count = 0;
       float dphi_min = 999.;
@@ -117,10 +119,20 @@ void load::Loop()
             }
          }
       }
-      if ((bjet_count != 1) or (jet_count < 2)) continue;
+      float kos = std::cos(std::abs(good_lept.Phi() - MissingETPHI));
+      float mt = std::sqrt(2 * MissingETMET * good_lept.Pt() * (1 - kos));
+      float mbl = (bjet+good_lept).M();
+      if (bjet_count != 1) continue;
+      cutflow->Fill(5, weight_total_NOSYS);
+      if (jet_count < 2) continue;
+      cutflow->Fill(6, weight_total_NOSYS);
+      if (mt > 175.) continue;
+      cutflow->Fill(7, weight_total_NOSYS);
+      if (mbl < 175.) continue;
+      cutflow->Fill(8, weight_total_NOSYS);
       for(float i: j_pt) h_pt_jet->Fill(i, weight_total_NOSYS);
       h_pt_bjet->Fill(bjet.Pt(), weight_total_NOSYS);
-      h_m_bl->Fill((bjet+good_lept).M(), weight_total_NOSYS);
+      h_m_bl->Fill(mbl, weight_total_NOSYS);
       h_n_bjet->Fill(bjet_count, weight_total_NOSYS);
       h_n_jets->Fill(jet_count, weight_total_NOSYS);
       h_dphi_min->Fill(dphi_min, weight_total_NOSYS);
@@ -128,8 +140,6 @@ void load::Loop()
 
       h_n_l->Fill(l_n, weight_total_NOSYS);
       h_met->Fill(MissingETMET, weight_total_NOSYS);
-      float kos = std::cos(std::abs(good_lept.Phi() - MissingETPHI));
-      float mt = std::sqrt(2 * MissingETMET * good_lept.Pt() * (1 - kos));
       h_mt->Fill(mt, weight_total_NOSYS);
 
       TLorentzVector tqark = bjet + good_lept;
@@ -164,5 +174,6 @@ void load::Loop()
    h_dphi_min->Write();
    h_n_l->Write();
    h_n_jets->Write();
+   cutflow->Write();
    outputFile->Close();
 }
