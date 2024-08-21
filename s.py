@@ -4,11 +4,6 @@ import numpy
 import math
 import numpy as np
 
-cs_sig = 0.3665 #pb
-lumi = 29.1 #1/fb
-N = 28505
-cs_sig = cs_sig * 1000 #fb
-w_sig = cs_sig * lumi / N
 
 
 bcks = ["others", "singletop", "ttbar", "ttZ", "wjets", "zjets"]
@@ -64,6 +59,7 @@ h_m_bl = [None] * 6
 h_dphi_min = [None] * 6
 h_n_l = [None] * 6
 h_n_jets = [None] * 6
+cutflows = [None] * 6
 
 for i in range(6):
     h_mt2[i] = file_uproot[i]["h_mt2"]
@@ -77,8 +73,9 @@ for i in range(6):
     h_dphi_min[i] =  file_uproot[i]["h_dphi_min"]
     h_n_l[i] =  file_uproot[i]["h_n_l"]
     h_n_jets[i] =  file_uproot[i]["h_n_jets"]
+    cutflows[i] = file_uproot[i]["cutflow"]
 
-file_sig = uproot.open("../DMRH/output_2.0_850.root")
+file_sig = uproot.open("../DMRH/output_1.0_1000.root")
 h_mt2_sig = file_sig["h_mt2"]
 h_met_sig = file_sig["h_met"]
 h_mt_sig = file_sig["h_mt"]
@@ -90,9 +87,23 @@ h_m_bl_sig =  file_sig["h_m_bl"]
 h_dphi_min_sig =  file_sig["h_dphi_min"]
 h_n_l_sig =  file_sig["h_n_l"]
 h_n_jets_sig =  file_sig["h_n_jets"]
+cutflow_sig = file_sig["cutflow"]
 
+file_data = uproot.open("../bck/data_output.root")
+h_mt2_data = file_data["h_mt2"]
+h_met_data = file_data["h_met"]
+h_mt_data = file_data["h_mt"]
+h_n_bjet_data = file_data["h_bjet_n"]
+h_pt_l_data =  file_data["h_pt_l"]
+h_pt_bjet_data =  file_data["h_pt_bjet"]
+h_pt_jet_data =  file_data["h_pt_jet"]
+h_m_bl_data =  file_data["h_m_bl"]
+h_dphi_min_data =  file_data["h_dphi_min"]
+h_n_l_data =  file_data["h_n_l"]
+h_n_jets_data =  file_data["h_n_jets"]
+cutflow_data = file_data["cutflow"]
 
-def plotting(histos, histo_sig, xlab="", tit="", bck=bcks, dir=1):
+def plotting(histos, histo_sig, histo_data, xlab="", tit="", bck=bcks, dir=1):
     # Initialize values and edges
     values = [None] * 6
     edges = [None] * 6
@@ -102,21 +113,21 @@ def plotting(histos, histo_sig, xlab="", tit="", bck=bcks, dir=1):
         values[i], edges[i] = histos[i].to_numpy()
     
     # Calculate the sums and sort the indices based on these sums
-    sums = np.array([np.sum(val) for val in values])  # Corrected sum calculation
+    sums = np.array([np.sum(val) for val in values])
     sorted_indices = np.argsort(sums)
     
     # Sort the values and tags manually
     sorted_values = [values[i] for i in sorted_indices]
     sorted_bck = [bck[i] for i in sorted_indices]
-    
+
     # Signal values and errors
     values_sig, edges_sig = histo_sig.to_numpy()
     errors = np.sqrt(values_sig)
-    errors *= w_sig
-    values_sig *= w_sig
+    
+    values_data, edges_data = histo_data.to_numpy()
     
     # Initialize the figure and axes
-    fig, axs = plt.subplots(2, 1, figsize=(8, 10), sharex=True, gridspec_kw={'height_ratios': [3, 1]})
+    fig, axs = plt.subplots(2, 1, figsize=(16, 20), sharex=True, gridspec_kw={'height_ratios': [3, 1]})
     
     # Prepare cumulative histograms
     cumulative_values = [np.copy(sorted_values[i]) for i in range(6)]
@@ -127,10 +138,12 @@ def plotting(histos, histo_sig, xlab="", tit="", bck=bcks, dir=1):
     for i in range(5, -1, -1):
         axs[0].hist(edges[0][:-1], bins=edges[0], weights=cumulative_values[i], histtype='stepfilled', 
                     label=sorted_bck[i], alpha=1.0)
-    
-    # Plot the signal histogram
     x = (edges[0][:-1] + edges[0][1:]) / 2.0
-    axs[0].hist(edges[0][:-1], bins=edges[0], weights=values_sig, color='k', histtype='step', label='signal')
+    axs[0].hist(edges[0][:-1], bins=edges[0], weights=values_sig, histtype='step', label='signal', color='black')
+    axs[0].scatter(x, values_data, label="data", marker='o', alpha=1., s=300, c='black')
+    # Plot the signal histogram
+    
+    #axs[0].hist(edges[0][:-1], bins=edges[0], weights=values_sig, color='k', histtype='step', label='signal')
     
     # Log scale, labels, and legend
     axs[0].set_yscale('log')
@@ -138,23 +151,52 @@ def plotting(histos, histo_sig, xlab="", tit="", bck=bcks, dir=1):
     axs[0].set_xlabel(xlab)
     axs[0].set_ylabel("NoE")
     
+    # Add grid and customize y-axis ticks
+    # axs[0].grid(True, which='both', linestyle='--', linewidth=0.5)
+    # axs[0].xaxis.set_major_locator(MultipleLocator((edges[0][-1] - edges[0][0])/10.))  
+
     # Plot significance
     s_values = s_calc(histos=sorted_values, sig=values_sig, dire=dir)
     axs[1].plot(x, s_values, color='red')
     axs[1].set_xlabel(xlab)
     axs[1].set_ylabel('significance')
     
+    # Add grid and customize y-axis ticks to the lower plot as well
+    # axs[1].grid(True, which='both', linestyle='--', linewidth=0.5) 
+    # axs[1].xaxis.set_major_locator(MultipleLocator((edges[0][-1] - edges[0][0])/10.))  
+    
+    # Adjust layout and save the figure
     plt.tight_layout()
     plt.savefig(tit)
+
     
-plotting(histos=h_mt2, histo_sig=h_mt2_sig, xlab="Stranverse mass [GeV]", tit="mt2.png")
-plotting(histos=h_met, histo_sig=h_met_sig, xlab="Missing Transverse Momentum [MeV]", tit="met.png")
-plotting(histos=h_mt, histo_sig=h_mt_sig, xlab="Tranverse mass [GeV]", tit="mt.png")
-plotting(histos=h_n_bjet, histo_sig=h_n_bjet_sig, xlab="Number of B-Jets", tit="nbjet.png")
-plotting(histos=h_pt_l, histo_sig=h_pt_l_sig, xlab="Transverse momentum of lepton [GeV]", tit="ptlep.png")
-plotting(histos=h_pt_bjet, histo_sig=h_pt_bjet_sig, xlab="Transverse momentum of B-Jet [GeV]", tit="ptbjet.png")
-plotting(histos=h_pt_jet, histo_sig=h_pt_jet_sig, xlab="Tranverse momentum of jet [GeV]", tit="ptjet.png")
-plotting(histos=h_m_bl, histo_sig=h_m_bl_sig, xlab="Invariant mass of B-Jet and lepton[GeV]", tit="mbl.png", dir=0)
-plotting(histos=h_dphi_min, histo_sig=h_dphi_min_sig, xlab="Delta phi min of jet and MET", tit="dphimin.png")
+plotting(histos=h_mt2, histo_sig=h_mt2_sig, histo_data=h_mt2_data, xlab="Stranverse mass [GeV]", tit="mt2.png")
+plotting(histos=h_met, histo_sig=h_met_sig, histo_data=h_met_data, xlab="Missing Transverse Momentum [MeV]", tit="met.png")
+plotting(histos=h_mt, histo_sig=h_mt_sig, histo_data=h_mt_data, xlab="Tranverse mass [GeV]", tit="mt.png")
+plotting(histos=h_n_bjet, histo_sig=h_n_bjet_sig, histo_data=h_n_bjet_data, xlab="Number of B-Jets", tit="nbjet.png")
+plotting(histos=h_pt_l, histo_sig=h_pt_l_sig, histo_data=h_pt_l_data, xlab="Transverse momentum of lepton [GeV]", tit="ptlep.png")
+plotting(histos=h_pt_bjet, histo_sig=h_pt_bjet_sig, histo_data=h_pt_bjet_data, xlab="Transverse momentum of B-Jet [GeV]", tit="ptbjet.png")
+plotting(histos=h_pt_jet, histo_sig=h_pt_jet_sig, histo_data=h_pt_jet_data, xlab="Tranverse momentum of jet [GeV]", tit="ptjet.png")
+plotting(histos=h_m_bl, histo_sig=h_m_bl_sig, histo_data=h_m_bl_data, xlab="Invariant mass of B-Jet and lepton[GeV]", tit="mbl.png", dir=0)
+plotting(histos=h_dphi_min, histo_sig=h_dphi_min_sig, histo_data=h_dphi_min_data, xlab="Delta phi min of jet and MET", tit="dphimin.png")
 #plotting(histos=h_n_l, histo_sig=h_n_l_sig, xlab="Number of lepton", tit="nlep.png")
-plotting(histos=h_n_jets, histo_sig=h_n_jets_sig, xlab="Number of jets", tit="njet.png")
+plotting(histos=h_n_jets, histo_sig=h_n_jets_sig, histo_data=h_n_jets_data, xlab="Number of jets", tit="njet.png")
+
+
+cut_val_sig, e = cutflow_sig.to_numpy()
+
+cut_val_bck = [None] * 6 
+e = [None] * 6
+
+for i in range(6):
+    cut_val_bck[i], e[i] = cutflows[i].to_numpy()
+signals = cut_val_sig[-1]
+backgrounds = numpy.sum(cut_val_bck[:][-1])
+
+significance = getZnGlenCowen(signals, backgrounds, 0.3 * backgrounds)
+print(signals)
+print(backgrounds)
+print("Significance = " + str(significance))
+print("s/sqrt(b) = "+str(signals / math.sqrt(backgrounds)))
+sig_alt = signals / math.sqrt(backgrounds + (0.3) * (0.3) * backgrounds)
+print("sig_alt = "+str(sig_alt))
