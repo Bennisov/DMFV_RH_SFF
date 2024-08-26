@@ -42,13 +42,13 @@ void load::Loop()
    auto h_n_jets = new TH1F("h_n_jets", ";;", 10, 0, 10);
 
    cutflow->GetXaxis()->SetBinLabel(1, "No Cut");
-   cutflow->GetXaxis()->SetBinLabel(2, "At least 1 lepton detected");
-   cutflow->GetXaxis()->SetBinLabel(3, "Lepton PT>30GeV");
-   cutflow->GetXaxis()->SetBinLabel(4, "At least 1 B-jet");
+   cutflow->GetXaxis()->SetBinLabel(2, "At least 1 lepton detected"); //fucks me
+   cutflow->GetXaxis()->SetBinLabel(3, "Lepton PT>30GeV"); //FUCKS ME
+   cutflow->GetXaxis()->SetBinLabel(4, "At least 1 B-jet"); //
    cutflow->GetXaxis()->SetBinLabel(5, "Lead B-Jet PT>30GeV");
    cutflow->GetXaxis()->SetBinLabel(6, "At least 2 jets");
    cutflow->GetXaxis()->SetBinLabel(7, "Lead Jet PT>100GeV");
-   cutflow->GetXaxis()->SetBinLabel(8, "Inv mass of B-jet and l < 160GeV");
+   cutflow->GetXaxis()->SetBinLabel(8, "Inv mass of B-jet and l < 300 GeV");
    cutflow->GetXaxis()->SetBinLabel(9, "Trans mass of l and met > 160GeV");
    cutflow->GetXaxis()->SetBinLabel(10, "Dphi min > 0.6");
    cutflow->GetXaxis()->SetBinLabel(11, "Missing MET > 90GeV");
@@ -73,7 +73,6 @@ void load::Loop()
       for (auto& element : *MuonE) element /= 1000.;
       for (auto& element : *MuonPT) element /= 1000.;
       float mt2 = -999.;
-      weight_total_NOSYS *= 300./29.1;
 
       int l_n = ElectronE->size() + MuonE->size();
       cutflow->Fill(1, weight_total_NOSYS);
@@ -147,14 +146,14 @@ void load::Loop()
       if (jet_count < 2) continue;
       cutflow->Fill(6, weight_total_NOSYS);
 
-      if (lead_jet.Pt() < 100.) continue;
+      if (lead_jet.Pt() < 30.) continue;
       cutflow->Fill(7, weight_total_NOSYS);
 
       float kos = std::cos(std::abs(good_lept.Phi() - MissingETPHI));
       float mt = std::sqrt(2 * MissingETMET * good_lept.Pt() * (1 - kos));
       float mbl = (bjet+good_lept).M();
 
-      if (mbl < 160.) continue;
+      if (mbl < 300.) continue;
       cutflow->Fill(8, weight_total_NOSYS);
 
       if (mt > 160.) continue;
@@ -163,7 +162,7 @@ void load::Loop()
       if (dphi_min < 0.6) continue;
       cutflow->Fill(10, weight_total_NOSYS);
 
-      if (MissingETMET < 90.) continue;
+      if (MissingETMET < 100.) continue;
       cutflow->Fill(11, weight_total_NOSYS);
 
 
@@ -214,6 +213,5 @@ void load::Loop()
    h_dphi_min->Write();
    h_n_l->Write();
    h_n_jets->Write();
-   cutflow->Write();
    outputFile->Close();
 }

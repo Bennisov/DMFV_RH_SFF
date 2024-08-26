@@ -6,7 +6,7 @@ import numpy as np
 
 
 
-bcks = ["others", "singletop", "ttbar", "ttZ", "wjets", "zjets"]
+bcks = ["Others", "Singletop", "Ttbar", "TtZ", "Wjets", "Zjets"]
 files = [None] * 6
 for i in range(6):
     files[i] = bcks[i] + "_output.root"
@@ -28,7 +28,7 @@ def s_calc(histos, sig, dire, b_err=0.3):
         for i in range(size):
             signal = sum(sig[:(i+1)])
             background = sum(bck[:(i+1)])
-            background_error = background * b_err
+            background_error = math.sqrt(background) * b_err
             s[i] = getZnGlenCowen(s=signal, b=background, b_err_abs=background_error)
     return s
         
@@ -75,7 +75,7 @@ for i in range(6):
     h_n_jets[i] =  file_uproot[i]["h_n_jets"]
     cutflows[i] = file_uproot[i]["cutflow"]
 
-file_sig = uproot.open("../DMRH/output_1.0_1000.root")
+file_sig = uproot.open("../bck/signal_output.root")
 h_mt2_sig = file_sig["h_mt2"]
 h_met_sig = file_sig["h_met"]
 h_mt_sig = file_sig["h_mt"]
@@ -89,7 +89,7 @@ h_n_l_sig =  file_sig["h_n_l"]
 h_n_jets_sig =  file_sig["h_n_jets"]
 cutflow_sig = file_sig["cutflow"]
 
-file_data = uproot.open("../bck/data_output.root")
+file_data = uproot.open("../bck/Data_output.root")
 h_mt2_data = file_data["h_mt2"]
 h_met_data = file_data["h_met"]
 h_mt_data = file_data["h_mt"]
@@ -157,7 +157,9 @@ def plotting(histos, histo_sig, histo_data, xlab="", tit="", bck=bcks, dir=1):
 
     # Plot significance
     s_values = s_calc(histos=sorted_values, sig=values_sig, dire=dir)
-    axs[1].plot(x, s_values, color='red')
+    axs[1].plot(x, s_values, color='red', label='long-ass formula')
+
+    axs[1].legend()
     axs[1].set_xlabel(xlab)
     axs[1].set_ylabel('significance')
     
@@ -179,24 +181,57 @@ plotting(histos=h_pt_bjet, histo_sig=h_pt_bjet_sig, histo_data=h_pt_bjet_data, x
 plotting(histos=h_pt_jet, histo_sig=h_pt_jet_sig, histo_data=h_pt_jet_data, xlab="Tranverse momentum of jet [GeV]", tit="ptjet.png")
 plotting(histos=h_m_bl, histo_sig=h_m_bl_sig, histo_data=h_m_bl_data, xlab="Invariant mass of B-Jet and lepton[GeV]", tit="mbl.png", dir=0)
 plotting(histos=h_dphi_min, histo_sig=h_dphi_min_sig, histo_data=h_dphi_min_data, xlab="Delta phi min of jet and MET", tit="dphimin.png")
-#plotting(histos=h_n_l, histo_sig=h_n_l_sig, xlab="Number of lepton", tit="nlep.png")
+plotting(histos=h_n_l, histo_sig=h_n_l_sig,histo_data=h_n_l_data ,xlab="Number of lepton", tit="nlep.png")
 plotting(histos=h_n_jets, histo_sig=h_n_jets_sig, histo_data=h_n_jets_data, xlab="Number of jets", tit="njet.png")
 
 
 cut_val_sig, e = cutflow_sig.to_numpy()
+cut_val_dat, e = cutflow_data.to_numpy()
 
 cut_val_bck = [None] * 6 
-e = [None] * 6
 
 for i in range(6):
-    cut_val_bck[i], e[i] = cutflows[i].to_numpy()
+    cut_val_bck[i], _ = cutflows[i].to_numpy()
 signals = cut_val_sig[-1]
 backgrounds = numpy.sum(cut_val_bck[:][-1])
-
 significance = getZnGlenCowen(signals, backgrounds, 0.3 * backgrounds)
 print(signals)
 print(backgrounds)
 print("Significance = " + str(significance))
 print("s/sqrt(b) = "+str(signals / math.sqrt(backgrounds)))
-sig_alt = signals / math.sqrt(backgrounds + (0.3) * (0.3) * backgrounds)
+sig_alt = signals / math.sqrt(backgrounds + (0.3) * (0.3) * backgrounds * backgrounds)
 print("sig_alt = "+str(sig_alt))
+
+cut_names = numpy.array(range(12))
+
+sums = np.array([np.sum(val) for val in cut_val_bck])
+sorted_indices = np.argsort(sums)
+sorted_values = [cut_val_bck[i] for i in sorted_indices]
+sorted_bck = [bcks[i] for i in sorted_indices]
+
+fig, axs = plt.subplots(2, 1, figsize=(16, 20), sharex=True, gridspec_kw={'height_ratios': [3, 1]})
+
+cumulative_values = [np.copy(cut_val_bck[i]) for i in range(6)]
+for i in range(1, 6):
+    cumulative_values[i] += cumulative_values[i-1]
+for i in range(5, -1, -1):
+    axs[0].bar(cut_names, cumulative_values[i], label=sorted_bck[i])
+axs[0].bar(cut_names, cut_val_sig, label="Signal", color='black', alpha=0.5)
+axs[0].scatter(cut_names, cut_val_dat, label="Data", color='black')
+axs[0].legend(ncol=2)
+axs[0].set_yscale('log')
+axs[0].set_ylabel("NoE")
+sig = [None] * 12
+sig_alt = [None] * 12
+sig_alt2 = [None] * 12
+for i in range(12):
+    sig[i] = getZnGlenCowen(cut_val_sig[i], cumulative_values[5][i], (cumulative_values[5][i])*(0.3))
+    sig_alt[i] = cut_val_sig[i] / math.sqrt(cumulative_values[5][i] + (0.3) * (0.3) * cumulative_values[5][i] * cumulative_values[5][i])
+    sig_alt2[i] = cut_val_sig[i] / math.sqrt(cumulative_values[5][i])
+axs[1].plot(cut_names, sig, color='red', label='Long formula')
+#axs[1].plot(cut_names, sig_alt, color='blue', label='s/sqrt(b + sigma^2)')
+#axs[1].plot(cut_names, sig_alt2, color='green', label='s/sqrt(b)')
+axs[1].legend()
+axs[1].set_ylabel("Significance")
+plt.tight_layout()
+plt.savefig("cutflow.png")

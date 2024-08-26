@@ -23,15 +23,16 @@ public :
 
 // Fixed size dimensions of array or collections stored in the TTree if any.
 
-      std::string loaded_file_name = "others.root";
+      std::string loaded_file_name = "signal.root";
       /* 
-      "others.root"
-      "singletop.root"
-      "ttbar.root"
-      "ttZ.root"
-      "wjets.root"
-      "zjets.root"  
-      "data.root"
+      "Others.root"
+      "Singletop.root"
+      "Ttbar.root"
+      "TtZ.root"
+      "Wjets.root"
+      "Zjets.root"  
+      "Data.root"
+      "signal.root"
        */
    // Declaration of leaf types
    vector<float>   *ElectronE;
@@ -182,10 +183,6 @@ void load::Init(TTree *tree)
    fChain->SetBranchAddress("MuonPT", &MuonPT, &b_MuonPT);
    fChain->SetBranchAddress("MuonPhi", &MuonPhi, &b_MuonPhi);
    fChain->SetBranchAddress("eventNumber", &eventNumber, &b_eventNumber);
-   fChain->SetBranchAddress("met_met_NOSYS", &met_met_NOSYS, &b_met_met_NOSYS);
-   fChain->SetBranchAddress("met_phi_NOSYS", &met_phi_NOSYS, &b_met_phi_NOSYS);
-   fChain->SetBranchAddress("met_significance_NOSYS", &met_significance_NOSYS, &b_met_significance_NOSYS);
-   fChain->SetBranchAddress("met_sumet_NOSYS", &met_sumet_NOSYS, &b_met_sumet_NOSYS);
    fChain->SetBranchAddress("weight_total_NOSYS", &weight_total_NOSYS, &b_weight_total_NOSYS);
    Notify();
 }
