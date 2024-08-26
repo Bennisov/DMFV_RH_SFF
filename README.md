@@ -1,6 +1,8 @@
 s.py -> script for plotting and significance calc             
 generate.py -> script for generating ntuples        
-load.C / load.h -> script for bck        
-cuts.C / cuts.h -> script for sig        
-mt2.h -> function for mt2 calc        
-load and cuts are exactly the same apart from different tree variables
+load.C / load.h -> script for bck, data and signal cuts        
+mt2.h -> function for mt2 calc             
+precuts.C -> precuting signal to be similar to bck         
+cuts.C / cuts.h -> obsolete        
+        
+
