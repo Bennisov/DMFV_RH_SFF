@@ -1,8 +1,8 @@
-s.py -> script for plotting and significance calc             
+s.py -> script for plotting          
 generate.py -> script for generating ntuples        
-load.C / load.h -> script for bck, data and signal cuts        
+load.C / load.h -> script for bck, data, sig cuts, and creating histograms with data        
 mt2.h -> function for mt2 calc             
-precuts.C -> precuting signal to be similar to bck         
+precuts.C/precuts.h -> precuting signal to be similar to bck         
 cuts.C / cuts.h -> obsolete        
         
 
