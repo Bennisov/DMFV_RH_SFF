@@ -23,16 +23,17 @@ public :
 
 // Fixed size dimensions of array or collections stored in the TTree if any.
 
-      std::string loaded_file_name = "signal.root";
+      std::string loaded_file_name = "300_2_precut2.root";
       /* 
-      "Others.root"
-      "Singletop.root"
-      "Ttbar.root"
-      "TtZ.root"
-      "Wjets.root"
-      "Zjets.root"  
-      "Data.root"
+      "others.root"
+      "singletop.root"
+      "ttbar.root"
+      "ttZ.root"
+      "wjets.root"
+      "zjets.root"  
+      "data.root"
       "signal.root"
+      "ntuples/500_1.5.root"
        */
    // Declaration of leaf types
    vector<float>   *ElectronE;
@@ -44,8 +45,8 @@ public :
    vector<float>   *JetEta;
    vector<float>   *JetPT;
    vector<float>   *JetPhi;
-   Float_t         MissingETMET;
-   Float_t         MissingETPHI;
+   Float_t         ETmiss_NOSYS;
+   Float_t         ETmissPhi_NOSYS;
    vector<float>   *MuonE;
    vector<float>   *MuonEta;
    vector<float>   *MuonPT;
@@ -67,8 +68,8 @@ public :
    TBranch        *b_JetEta;   //!
    TBranch        *b_JetPT;   //!
    TBranch        *b_JetPhi;   //!
-   TBranch        *b_MissingETMET;   //!
-   TBranch        *b_MissingETPHI;   //!
+   TBranch        *b_ETmiss_NOSYS;   //!
+   TBranch        *b_ETmissPhi_NOSYS;   //!
    TBranch        *b_MuonE;   //!
    TBranch        *b_MuonEta;   //!
    TBranch        *b_MuonPT;   //!
@@ -176,8 +177,8 @@ void load::Init(TTree *tree)
    fChain->SetBranchAddress("JetEta", &JetEta, &b_JetEta);
    fChain->SetBranchAddress("JetPT", &JetPT, &b_JetPT);
    fChain->SetBranchAddress("JetPhi", &JetPhi, &b_JetPhi);
-   fChain->SetBranchAddress("MissingETMET", &MissingETMET, &b_MissingETMET);
-   fChain->SetBranchAddress("MissingETPHI", &MissingETPHI, &b_MissingETPHI);
+   fChain->SetBranchAddress("ETmiss_NOSYS", &ETmiss_NOSYS, &b_ETmiss_NOSYS);
+   fChain->SetBranchAddress("ETmissPhi_NOSYS", &ETmissPhi_NOSYS, &b_ETmissPhi_NOSYS);
    fChain->SetBranchAddress("MuonE", &MuonE, &b_MuonE);
    fChain->SetBranchAddress("MuonEta", &MuonEta, &b_MuonEta);
    fChain->SetBranchAddress("MuonPT", &MuonPT, &b_MuonPT);
